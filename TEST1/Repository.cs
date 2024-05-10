@@ -13,47 +13,50 @@ public class Repository
 
     public books_editions Getter(int id)
     {
-        
         var query = @"SELECT 
-                    books_editions.ID AS  books_editionsID,
-                    books_editions.release_date AS release_date,
-                    books_editions.edition_title AS edition_title,
-                    book.ID as BookID,
-                    title,
-                    publishing_houses.ID AS publishing_houses,
-			        Name
-                    FROM books_editions
-                    JOIN books ON books.ID = books_editions.book
-		            JOIN publishing_houses ON publishing_houses.ID = books_editions.publishing_houses
-                    WHERE books.ID = @ID;";
-        SqlConnection connection = new SqlConnection(_configuration.GetConnectionString("Default"));
-        SqlCommand command = new SqlCommand(query, connection); 
-        command.Parameters.AddWithValue("@id", id);
+                    be.ID AS books_editionsID,
+                    be.release_date AS release_date,
+                    be.edition_title AS edition_title,
+                    b.ID as BookID,
+                    b.title,
+                    ph.ID AS publishing_housesID,
+                    ph.Name
+                    FROM books_editions be
+                    JOIN books b ON b.ID = be.FK_book
+                    JOIN publishing_houses ph ON ph.ID = be.FK_publishing_house
+                    WHERE b.ID = @ID;";
 
-        connection.Open();
-        publishing_houses publishingHouses = new publishing_houses();
-        var books_editions1 = new books_editions();
-        var read = command.ExecuteReader();
-        command.ExecuteReader();
-        while (read.Read())
+        using (SqlConnection connection = new SqlConnection(_configuration.GetConnectionString("Default")))
         {
-            books_editions1 = new books_editions
+            SqlCommand command = new SqlCommand(query, connection);
+            command.Parameters.AddWithValue("@ID", id);
+
+            connection.Open();
+            using (SqlDataReader reader = command.ExecuteReader())
             {
-                id = read.GetInt32(read.GetOrdinal("books_editionsID")),
-                release_date = read.GetDateTime(read.GetOrdinal("release_date")),
-                edition_title = read.GetDateTime(read.GetOrdinal("edition_title")),
-                BookDB = new BooksDto2
+                if (reader.Read())
                 {
-                    title = read.GetString(read.GetOrdinal("title"))
-                },
-                publishing_housesDB = new publishing_houses2
-                {
-                    name = read.GetString(read.GetOrdinal("name"))
+                    return new books_editions
+                    {
+                        id = reader.GetInt32(reader.GetOrdinal("books_editionsID")),
+                        release_date = reader.GetDateTime(reader.GetOrdinal("release_date")),
+                        edition_title = reader.GetDateTime(reader.GetOrdinal("edition_title")),
+                        BookDB = new BooksDto2
+                        {
+                            id = reader.GetInt32(reader.GetOrdinal("BookID")),
+                            title = reader.GetString(reader.GetOrdinal("title"))
+                        },
+                        publishing_housesDB = new publishing_houses2
+                        {
+                            id = reader.GetInt32(reader.GetOrdinal("publishing_housesID")),
+                            name = reader.GetString(reader.GetOrdinal("Name"))
+                        }
+                    };
                 }
-            };
+            }
         }
-        connection.Close();
-        return books_editions1;
+
+        return null; 
     }
 
     
